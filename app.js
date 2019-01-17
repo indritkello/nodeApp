@@ -12,7 +12,9 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 app.use(
   session({
     secret: randomString.generate(),
-    cookie: { maxAge: 60000 },
+    cookie: {
+      maxAge: 60000
+    },
     resave: false,
     saveUninitialized: false
   })
@@ -39,10 +41,8 @@ app.all("/redirect", (req, res) => {
   const code = req.query.code;
   const returnedState = req.query.state;
   if (req.session.csrf_string === returnedState) {
-    request.post(
-      {
-        url:
-          "https://github.com/login/oauth/access_token?" +
+    request.post({
+        url: "https://github.com/login/oauth/access_token?" +
           qs.stringify({
             client_id: process.env.CLIENT_ID,
             client_secret: process.env.CLIENT_SECRET,
@@ -62,8 +62,7 @@ app.all("/redirect", (req, res) => {
 });
 
 app.get("/user", (req, res) => {
-  request.get(
-    {
+  request.get({
       url: "https://api.github.com/user/repos",
       headers: {
         Authorization: "token " + req.session.access_token,
@@ -71,23 +70,9 @@ app.get("/user", (req, res) => {
       }
     },
     (error, response, body) => {
-      // htmlContent = '<div style="float:center"><ol>';
-      // var tabela = JSON.parse(body);
-
-      // for (i = 0; i < tabela.length; i++) {
-      //   htmlContent += "<li>" + tabela[i].full_name + "</li>";
-      // }
-      // htmlContent += "</ol></div>";
-      // res.send(
-      //   "<center><h2>You're logged in! Here's all your repositories on GitHub: </h2></center>" +
-      //     htmlContent +
-      //     '<center><p>Go back to <a href="./">log in page</a>.</p><center>' +
-      //     "<h4>JSON Format Response</h4>" +
-      //     body
-      // );
-
-      let htmlContent = `<div class="container"><div id="profile"></div></div>`;
-      res.send(body);
+      res.render("user", {
+        repos: JSON.parse(body)
+      });
     }
   );
 });
