@@ -1,14 +1,17 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const passport = require('passport');
+const GitHubStrategy = require('passport-github').Strategy;
 const session = require("express-session");
 const request = require("request");
-const qs = require("querystring");
 const randomString = require("randomstring");
 const path = require("path");
 
 app.set("view engine", "ejs");
 app.use("/public", express.static(path.join(__dirname, "public")));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(
   session({
     secret: randomString.generate(),
@@ -20,52 +23,38 @@ app.use(
   })
 );
 
+let userAccessToken = "";
+passport.use(new GitHubStrategy({
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: "/auth/github/callback"
+  },
+  (accessToken, refreshToken, profile, cb) => {
+    userAccessToken = accessToken;
+    return cb(null, profile);
+  }
+));
+
 app.get("/", (req, res, next) => {
   res.render("Index");
 });
 
-app.get("/login", (req, res, next) => {
-  req.session.csrf_string = randomString.generate();
-  const githubAuthUrl =
-    "https://github.com/login/oauth/authorize?" +
-    qs.stringify({
-      client_id: process.env.CLIENT_ID,
-      // redirect_uri: redirect_uri,
-      state: req.session.csrf_string
-      // scope: 'user:email'
-    });
-  res.redirect(githubAuthUrl);
-});
+app.get('/auth/github',
+  passport.authenticate('github'));
 
-app.all("/redirect", (req, res) => {
-  const code = req.query.code;
-  const returnedState = req.query.state;
-  if (req.session.csrf_string === returnedState) {
-    request.post({
-        url: "https://github.com/login/oauth/access_token?" +
-          qs.stringify({
-            client_id: process.env.CLIENT_ID,
-            client_secret: process.env.CLIENT_SECRET,
-            code: code,
-            //redirect_uri: redirect_uri,
-            state: req.session.csrf_string
-          })
-      },
-      (error, response, body) => {
-        req.session.access_token = qs.parse(body).access_token;
-        res.redirect("/user");
-      }
-    );
-  } else {
-    res.redirect("/");
-  }
-});
+app.get('/auth/github/callback',
+  passport.authenticate('github', {
+    failureRedirect: '/'
+  }),
+  (req, res) => {
+    res.redirect('/user');
+  });
 
 app.get("/user", (req, res) => {
   request.get({
       url: "https://api.github.com/user/repos",
       headers: {
-        Authorization: "token " + req.session.access_token,
+        Authorization: "token " + userAccessToken,
         "User-Agent": "Kello"
       }
     },
@@ -77,8 +66,15 @@ app.get("/user", (req, res) => {
   );
 });
 
+passport.serializeUser((user, cb) => {
+  cb(null, user);
+});
+
+passport.deserializeUser((obj, cb) => {
+  cb(null, obj);
+});
+
 const port = process.env.PORT || 9000;
-const redirect_uri = process.env.HOST + "/redirect";
 
 app.listen(port, () => {
   console.log("Server listening at port " + port);
