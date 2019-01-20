@@ -4,17 +4,24 @@
   "description": "An interesting Node.js app from Indrit and Simon",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "author": "Indrit Kello <indritkello97@gmail.com>, Simon Gjetaj <gjetajsimon@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-flash": "^0.1.1",
     "dotenv": "^5.0.0",
     "ejs": "^2.6.1",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
+    "jsdom": "^13.1.0",
+    "mongoose": "^5.4.5",
     "nodemon": "^1.14.11",
+    "opn": "^5.4.0",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
     "randomstring": "^1.1.5",
     "request": "^2.83.0"
   },

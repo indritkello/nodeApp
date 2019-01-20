@@ -2,19 +2,37 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const session = require("express-session");
+const mongoose = require("mongoose");
+const passport = require("passport");
+const flash = require("connect-flash");
 const request = require("request");
 const qs = require("querystring");
 const randomString = require("randomstring");
 const path = require("path");
 
+const port = parseInt(process.env.PORT, 10) || 9000;
+
+// DB Config
+const db = require("./config/keys").MongoURI;
+
+// Passport Config
+require("./config/passport")(passport);
+
+// Connect to Mongo
+mongoose
+  .connect(
+    db,
+    { useNewUrlParser: true }
+  )
+  .then(() => console.info("MongoDB connected!"))
+  .catch(err => console.error(err));
+
 app.set("view engine", "ejs");
 app.use("/public", express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: false })); // bodyParser
+app.use(flash()); // Connect flash
 
-let isAuthenticated = false;
-app.use((req, res, next) => {
-  res.locals.isLoggedIn = isAuthenticated;
-  next();
-});
+// let isAuthenticated = false;
 
 app.use(
   session({
@@ -27,8 +45,22 @@ app.use(
   })
 );
 
-app.get("/", (req, res, next) => {
-  res.render("Index");
+if (app.get("env") === "production") {
+  app.set("trust proxy", 1); // trust first proxy
+  sess.cookie.secure = true; // serve secure cookies
+}
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Global vars
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  res.locals.successMsg = req.flash("successMsg");
+  res.locals.errorMsg = req.flash("errorMsg");
+  res.locals.error = req.flash("error");
+  next();
 });
 
 app.get("/auth/github", (req, res, next) => {
@@ -71,7 +103,7 @@ app.all("/auth/github/callback", (req, res) => {
   }
 });
 
-app.get("/user", isLoggedIn, (req, res) => {
+app.get("/user", (req, res) => {
   request.get(
     {
       url: "https://api.github.com/user/repos",
@@ -88,19 +120,22 @@ app.get("/user", isLoggedIn, (req, res) => {
   );
 });
 
-app.get("/logout", (req, res) => {
-  req.session.destroy();
-  isAuthenticated = false;
-  res.redirect("/");
-});
+// app.get("/logout", (req, res) => {
+//   req.session.destroy();
+//   isAuthenticated = false;
+//   res.redirect("/");
+// });
 
-function isLoggedIn(req, res, next) {
-  if (req.session.access_token) return next();
-  res.redirect("/");
-}
+// function isLoggedIn(req, res, next) {
+//   if (req.session.access_token) return next();
+//   res.redirect("/");
+// }
 
-const port = process.env.PORT || 9000;
 // const redirect_uri = process.env.HOST + "/redirect";
+
+// Routes
+app.use("/", require("./routes/index"));
+app.use("/users", require("./routes/users"));
 
 app.listen(port, () => {
   console.log("Server listening at port " + port);

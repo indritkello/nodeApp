@@ -1,11 +1,27 @@
 <% include partials/header %> <% include partials/navbar %>
 
-<div class="col-sm-6 mx-auto text-center text-primary p-2">
-  <h2 class="pb-5">Sign In</h2>
-
-  <a href="/auth/github" class="btn btn-outline-dark"
-    ><i class="fab fa-github"></i> Login With Github</a
-  >
+<div class="container">
+  <div class="row mt-5">
+    <div class="col-md-6 m-auto">
+      <div class="card card-body text-center">
+        <h1>
+          <img
+            src="../public/images/logo.jpg"
+            class="img-fluid img-thumbnail"
+          />
+        </h1>
+        <p>Create an account or login</p>
+        <a href="/users/register" class="btn btn-primary btn-block mb-2"
+          >Register</a
+        >
+        <a href="/users/login" class="btn btn-secondary btn-block">Login</a>
+        <span class="mt-2 mb-2">OR</span>
+        <a href="/auth/github" class="btn btn-outline-dark"
+          ><i class="fab fa-github"></i> Login With Github (BETA)</a
+        >
+      </div>
+    </div>
+  </div>
 </div>
 
 <% include partials/footer %>
